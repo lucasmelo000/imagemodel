@@ -1,59 +1,453 @@
-<div>Teachable Machine Image Model</div>
-<button type="button" onclick="init()">Start</button>
-<div id="webcam-container"></div>
-<div id="label-container"></div>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-<script type="text/javascript">
-    // More API functions here:
-    // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/image
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vegeta Vision</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --gold: #f5c518;
+      --dark-gold: #c49a00;
+      --saiyan-blue: #1a1a2e;
+      --deep: #0d0d1a;
+      --panel: rgba(255,255,255,0.04);
+      --border: rgba(245,197,24,0.25);
+      --glow: 0 0 20px rgba(245,197,24,0.35);
+    }
 
-    // the link to your model provided by Teachable Machine export panel
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--deep);
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245,197,24,0.12) 0%, transparent 70%),
+        repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(245,197,24,0.04) 60px),
+        repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(245,197,24,0.04) 60px);
+      min-height: 100vh;
+      font-family: 'Exo 2', sans-serif;
+      color: #e0e0e0;
+    }
+
+    /* ── HEADER ── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 1.25rem 0;
+      background: rgba(13,13,26,0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      color: var(--gold);
+      letter-spacing: 0.15em;
+      text-shadow: var(--glow);
+    }
+
+    .logo span {
+      color: #fff;
+      opacity: 0.5;
+      font-weight: 300;
+    }
+
+    .badge-power {
+      background: linear-gradient(135deg, var(--gold), var(--dark-gold));
+      color: #000;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      padding: 3px 10px;
+      border-radius: 2px;
+    }
+
+    /* ── HERO ── */
+    .hero-text {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(0.7rem, 2vw, 0.85rem);
+      letter-spacing: 0.3em;
+      color: var(--gold);
+      opacity: 0.7;
+      text-transform: uppercase;
+    }
+
+    .hero-title {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(1.6rem, 5vw, 2.8rem);
+      line-height: 1.15;
+      color: #fff;
+    }
+
+    .hero-title em {
+      font-style: normal;
+      color: var(--gold);
+      text-shadow: var(--glow);
+    }
+
+    /* ── PANEL CARDS ── */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+    }
+
+    /* ── WEBCAM ── */
+    #webcam-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 220px;
+    }
+
+    #webcam-container canvas {
+      border-radius: 8px;
+      max-width: 100%;
+      height: auto;
+      box-shadow: 0 0 30px rgba(245,197,24,0.2), 0 0 60px rgba(245,197,24,0.08);
+    }
+
+    .cam-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      color: rgba(255,255,255,0.25);
+      padding: 2.5rem 1rem;
+    }
+
+    .cam-icon {
+      width: 64px;
+      height: 64px;
+      border: 2px dashed rgba(245,197,24,0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+    }
+
+    /* ── START BUTTON ── */
+    .btn-saiyan {
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #000;
+      background: linear-gradient(135deg, var(--gold) 0%, #ffdd57 50%, var(--dark-gold) 100%);
+      border: none;
+      border-radius: 6px;
+      padding: 0.8rem 2.2rem;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 20px rgba(245,197,24,0.4);
+      width: 100%;
+    }
+
+    .btn-saiyan::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .btn-saiyan:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(245,197,24,0.55); }
+    .btn-saiyan:hover::before { opacity: 1; }
+    .btn-saiyan:active { transform: translateY(0); }
+    .btn-saiyan:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-saiyan .spinner-border {
+      width: 1rem;
+      height: 1rem;
+      border-width: 2px;
+    }
+
+    /* ── LABELS / PROGRESS ── */
+    .section-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      color: var(--gold);
+      opacity: 0.65;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .prediction-item {
+      margin-bottom: 1rem;
+    }
+
+    .prediction-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.35rem;
+    }
+
+    .class-name {
+      font-family: 'Exo 2', sans-serif;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #e0e0e0;
+      letter-spacing: 0.05em;
+    }
+
+    .class-pct {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.75rem;
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    .progress {
+      height: 8px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      background: linear-gradient(90deg, var(--dark-gold), var(--gold), #ffdd57);
+      border-radius: 4px;
+      transition: width 0.25s ease;
+      box-shadow: 0 0 8px rgba(245,197,24,0.5);
+    }
+
+    .progress-bar.low   { background: linear-gradient(90deg, #444, #666); box-shadow: none; }
+    .progress-bar.mid   { background: linear-gradient(90deg, #888, #bbb); box-shadow: 0 0 4px rgba(255,255,255,0.2); }
+    .progress-bar.high  { background: linear-gradient(90deg, var(--dark-gold), var(--gold), #ffdd57); }
+
+    /* ── STATUS DOT ── */
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: inline-block;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    .status-dot.active {
+      background: #4cff91;
+      box-shadow: 0 0 8px #4cff91;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem 0;
+      color: rgba(255,255,255,0.2);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 576px) {
+      .btn-saiyan { font-size: 0.75rem; padding: 0.75rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="container">
+      <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-3">
+          <div class="logo">VEGETA<span> VISION</span></div>
+          <span class="badge-power">AI POWERED</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <div class="status-dot" id="statusDot"></div>
+          <span style="font-size:0.72rem;letter-spacing:0.1em;color:rgba(255,255,255,0.35);" id="statusLabel">OFFLINE</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="container py-4 py-md-5">
+
+    <!-- HERO -->
+    <div class="mb-4 mb-md-5">
+      <p class="hero-text mb-2">Reconhecimento de Imagem</p>
+      <h1 class="hero-title mb-3">Classificação em<br/><em>Tempo Real</em></h1>
+      <p style="color:rgba(255,255,255,0.4);font-size:0.9rem;max-width:480px;line-height:1.7;">
+        Ative a câmera e o modelo de IA identificará objetos e gestos ao vivo, exibindo o nível de correspondência para cada classe.
+      </p>
+    </div>
+
+    <div class="row g-4">
+
+      <!-- COLUNA CÂMERA -->
+      <div class="col-12 col-lg-6">
+        <div class="panel p-4 h-100 d-flex flex-column gap-4">
+
+          <div>
+            <p class="section-title">Entrada da Câmera</p>
+            <div id="webcam-container">
+              <div class="cam-placeholder" id="camPlaceholder">
+                <div class="cam-icon">📷</div>
+                <p style="font-size:0.8rem;text-align:center;line-height:1.6;">
+                  Clique em <strong style="color:var(--gold);">Ativar Câmera</strong><br/>para iniciar a classificação
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn-saiyan" id="startBtn" onclick="init()">
+            <span id="btnText">⚡ Ativar Câmera</span>
+            <span id="btnSpinner" class="d-none">
+              <span class="spinner-border me-2" role="status"></span> Carregando modelo...
+            </span>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- COLUNA RESULTADOS -->
+      <div class="col-12 col-lg-6">
+        <div class="panel p-4 h-100">
+          <p class="section-title">Resultados da Classificação</p>
+
+          <div id="label-container">
+            <!-- Estado vazio -->
+            <div id="emptyState" style="color:rgba(255,255,255,0.2);font-size:0.82rem;padding:2rem 0;text-align:center;line-height:2;">
+              Nenhuma predição ainda.<br/>Ative a câmera para começar.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <span>© 2024 Vegeta Vision — Teachable Machine + TensorFlow.js</span>
+      <span style="font-family:'Orbitron',monospace;color:rgba(245,197,24,0.3);font-size:0.65rem;letter-spacing:0.2em;">SUPER SAIYAN LEVEL AI</span>
+    </div>
+  </footer>
+
+  <!-- SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
     const URL = "https://teachablemachine.withgoogle.com/models/8RVTn7sEX/";
 
     let model, webcam, labelContainer, maxPredictions;
+    let predictionItems = [];
 
-    // Load the image model and setup the webcam
     async function init() {
-        const modelURL = URL + "model.json";
-        const metadataURL = URL + "metadata.json";
+      const btn       = document.getElementById('startBtn');
+      const btnText   = document.getElementById('btnText');
+      const btnSpinner = document.getElementById('btnSpinner');
 
-        // load the model and metadata
-        // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
-        // or files from your local hard drive
-        // Note: the pose library adds "tmImage" object to your window (window.tmImage)
-        model = await tmImage.load(modelURL, metadataURL);
+      btn.disabled = true;
+      btnText.classList.add('d-none');
+      btnSpinner.classList.remove('d-none');
+
+      try {
+        model = await tmImage.load(URL + "model.json", URL + "metadata.json");
         maxPredictions = model.getTotalClasses();
 
-        // Convenience function to setup a webcam
-        const flip = true; // whether to flip the webcam
-        webcam = new tmImage.Webcam(200, 200, flip); // width, height, flip
-        await webcam.setup(); // request access to the webcam
+        const flip = true;
+        webcam = new tmImage.Webcam(280, 280, flip);
+        await webcam.setup();
         await webcam.play();
         window.requestAnimationFrame(loop);
 
-        // append elements to the DOM
-        document.getElementById("webcam-container").appendChild(webcam.canvas);
-        labelContainer = document.getElementById("label-container");
-        for (let i = 0; i < maxPredictions; i++) { // and class labels
-            labelContainer.appendChild(document.createElement("div"));
+        // Remove placeholder e insere canvas
+        document.getElementById('camPlaceholder').remove();
+        document.getElementById('webcam-container').appendChild(webcam.canvas);
+
+        // Monta as barras de progresso
+        labelContainer = document.getElementById('label-container');
+        document.getElementById('emptyState').remove();
+
+        for (let i = 0; i < maxPredictions; i++) {
+          const item = document.createElement('div');
+          item.className = 'prediction-item';
+          item.innerHTML = `
+            <div class="prediction-header">
+              <span class="class-name" id="class-name-${i}">—</span>
+              <span class="class-pct" id="class-pct-${i}">0%</span>
+            </div>
+            <div class="progress">
+              <div class="progress-bar" id="class-bar-${i}" role="progressbar"
+                   style="width:0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>`;
+          labelContainer.appendChild(item);
+          predictionItems.push(item);
         }
+
+        // Status ativo
+        document.getElementById('statusDot').classList.add('active');
+        document.getElementById('statusLabel').textContent = 'AO VIVO';
+
+        // Troca botão por mensagem
+        btnText.textContent = '✅ Câmera Ativa';
+        btnText.classList.remove('d-none');
+        btnSpinner.classList.add('d-none');
+
+      } catch (err) {
+        console.error(err);
+        btn.disabled = false;
+        btnText.textContent = '⚡ Ativar Câmera';
+        btnText.classList.remove('d-none');
+        btnSpinner.classList.add('d-none');
+        alert('Erro ao acessar a câmera ou carregar o modelo. Verifique as permissões.');
+      }
     }
 
     async function loop() {
-        webcam.update(); // update the webcam frame
-        await predict();
-        window.requestAnimationFrame(loop);
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
     }
 
-    // run the webcam image through the image model
     async function predict() {
-        // predict can take in an image, video or canvas html element
-        const prediction = await model.predict(webcam.canvas);
-        for (let i = 0; i < maxPredictions; i++) {
-            const classPrediction =
-                prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-            labelContainer.childNodes[i].innerHTML = classPrediction;
-        }
+      const prediction = await model.predict(webcam.canvas);
+
+      for (let i = 0; i < maxPredictions; i++) {
+        const p    = prediction[i];
+        const pct  = Math.round(p.probability * 100);
+
+        document.getElementById(`class-name-${i}`).textContent = p.className;
+        document.getElementById(`class-pct-${i}`).textContent  = pct + '%';
+
+        const bar = document.getElementById(`class-bar-${i}`);
+        bar.style.width      = pct + '%';
+        bar.setAttribute('aria-valuenow', pct);
+
+        // Cor dinâmica
+        bar.className = 'progress-bar';
+        if (pct >= 70)      bar.classList.add('high');
+        else if (pct >= 35) bar.classList.add('mid');
+        else                bar.classList.add('low');
+      }
     }
-</script>
+  </script>
+</body>
+</html>
