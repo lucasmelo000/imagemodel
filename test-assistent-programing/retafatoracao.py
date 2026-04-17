@@ -1,20 +1,29 @@
-def c(l):
-    t=0
-    for i in range(len(l)):
-        t=t+l[i]
-    m=t/len(l)
-    mx=l[0]
-    mn=l[0]
-    for i in range(len(l)):
-        if l[i]>mx:
-            mx=l[i]
-        if l[i]<mn:
-            mn=l[i]
-    return t,m,mx,mn
+def calculate_list_statistics(numbers: list) -> tuple:
+    """
+    Calcula estatísticas de uma lista de números.
+    
+    Args:
+        numbers: Lista de números para análise
+        
+    Returns:
+        Tupla contendo (total, média, máximo, mínimo)
+    """
+    total = sum(numbers)
+    average = total / len(numbers)
+    maximum = max(numbers)
+    minimum = min(numbers)
+    
+    return total, average, maximum, minimum
 
-x=[23,7,45,2,67,12,89,34,56,11]
-a,b,c2,d=c(x)
-print("total:",a)
-print("media:",b)
-print("maior:",c2)
-print("menor:",d)
+
+# Lista de números para análise
+data = [23, 7, 45, 2, 67, 12, 89, 34, 56, 11]
+
+# Desempacotar resultados das estatísticas
+total, average, maximum, minimum = calculate_list_statistics(data)
+
+# Exibir resultados
+print("Total:", total)
+print("Média:", average)
+print("Maior:", maximum)
+print("Menor:", minimum)
